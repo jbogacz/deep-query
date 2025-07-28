@@ -1,7 +1,9 @@
 """API client for forum interactions."""
 
+from typing import Any, Dict, List, Optional
+
 import httpx
-from typing import List, Dict, Any, Optional
+
 from .config import Config
 
 
@@ -51,15 +53,51 @@ class ForumAPIClient:
 
         return access_token
 
-    def get_links(self, limit: int = 10) -> List[Dict[str, Any]]:
-        """Fetch links from the /links endpoint."""
-        params = {}
-        if limit:
-            params["limit"] = limit
+    def _get_list(self, endpoint: str, limit: int = 25) -> List[Dict[str, Any]]:
+        """Generic method to fetch a list of items from the API."""
+        if limit <= 50:
+            # Single page request
+            params = {}
+            if limit:
+                params["limit"] = limit
 
-        response = self.client.get("/links", params=params)
-        response.raise_for_status()
-        return response.json()['data']
+            response = self.client.get("endpoint", params=params)
+            response.raise_for_status()
+            return response.json()['data']
+
+        # Multi-page request for limit > 50
+        all = []
+        page = 1
+        per_page = 50
+        remaining = limit
+
+        while remaining > 0:
+            current_limit = min(per_page, remaining)
+            params = {
+                "limit": current_limit,
+                "page": page
+            }
+
+            response = self.client.get("/links", params=params)
+            response.raise_for_status()
+            page_data = response.json()['data']
+
+            if not page_data:  # No more data available
+                break
+
+            all.extend(page_data)
+            remaining -= len(page_data)
+            page += 1
+
+            # If we got fewer items than requested, we've reached the end
+            if len(page_data) < current_limit:
+                break
+
+        return all
+
+    def get_links(self, limit: int = 25) -> List[Dict[str, Any]]:
+        """Fetch links from the /links endpoint with paging support."""
+        return self._get_list("/links", limit)
 
     def get_comments(self, link_id: str) -> List[Dict[str, Any]]:
         """Fetch comments for a specific link."""
