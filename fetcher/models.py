@@ -13,6 +13,7 @@ class Record(BaseModel):
     id: str
     title: str
     description: str
+    source: str
     type: RecordType
     comments: List[str] = []
 

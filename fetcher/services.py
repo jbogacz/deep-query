@@ -31,6 +31,7 @@ class ForumService:
                     id=str(link["id"]),
                     title=link["title"],
                     description=link["description"],
+                    source=f"https://wykop.pl/link/{link['id']}",
                     type=RecordType.ARTICLE,
                 )
 
