@@ -1,37 +1,24 @@
-"""Data models for forum entities."""
-
+from enum import Enum
 from typing import List
 
 from pydantic import BaseModel
 
 
-class Comment(BaseModel):
-    """Model for a comment/conversation entry."""
-
-    id: str
-    author: str
-    content: str
-
-
-class Link(BaseModel):
-    """Model for a forum link/article."""
-
-    id: str
-    title: str
-    description: str
+class RecordType(str, Enum):
+    ARTICLE = "article/link"
+    ENTRY = "entry/microblog"
 
 
 class Record(BaseModel):
-    """Model for a record containing a link and its comments."""
-
     id: str
     title: str
     description: str
+    type: RecordType
     comments: List[str] = []
 
     def __str__(self):
         """String representation of the record."""
-        return f"Record(id={self.id}, title={self.title}, description={self.description}, comments_count={len(self.comments)})"
+        return f"Record(id={self.id}, type={self.type}, title={self.title}, description={self.description}, comments_count={len(self.comments)})"
 
     def add_comment(self, comment: str):
         """Add a comment to the record."""
