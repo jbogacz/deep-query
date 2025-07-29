@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional
 import httpx
 
 from .config import Config
+from .http_utils import make_request_with_retry
 
 
 class ForumAPIClient:
@@ -16,7 +17,7 @@ class ForumAPIClient:
             base_url=config.api_base_url,
             timeout=30.0,
             headers=config.headers,
-            event_hooks={'request': [self._auth_interceptor]}
+            event_hooks={"request": [self._auth_interceptor]},
         )
         self._access_token: Optional[str] = None
 
@@ -29,7 +30,7 @@ class ForumAPIClient:
     def _auth_interceptor(self, request: httpx.Request):
         """Interceptor that ensures Authorization header is present on every request."""
         # Skip auth check for the auth endpoint itself
-        if request.url.path.endswith('/auth'):
+        if request.url.path.endswith("/auth"):
             return
         # Check if Authorization header is missing
         if not self._access_token:
@@ -61,9 +62,10 @@ class ForumAPIClient:
             if limit:
                 params["limit"] = limit
 
-            response = self.client.get("endpoint", params=params)
-            response.raise_for_status()
-            return response.json()['data']
+            response = make_request_with_retry(
+                self.client, "GET", endpoint, params=params
+            )
+            return response.json()["data"]
 
         # Multi-page request for limit > 50
         all = []
@@ -73,14 +75,12 @@ class ForumAPIClient:
 
         while remaining > 0:
             current_limit = min(per_page, remaining)
-            params = {
-                "limit": current_limit,
-                "page": page
-            }
+            params = {"limit": current_limit, "page": page}
 
-            response = self.client.get("/links", params=params)
-            response.raise_for_status()
-            page_data = response.json()['data']
+            response = make_request_with_retry(
+                self.client, "GET", endpoint, params=params
+            )
+            page_data = response.json()["data"]
 
             if not page_data:  # No more data available
                 break
@@ -99,11 +99,23 @@ class ForumAPIClient:
         """Fetch links from the /links endpoint with paging support."""
         return self._get_list("/links", limit)
 
-    def get_comments(self, link_id: str) -> List[Dict[str, Any]]:
+    def get_link_comments(self, link_id: str) -> List[Dict[str, Any]]:
         """Fetch comments for a specific link."""
-        response = self.client.get(f"/links/{link_id}/comments")
-        response.raise_for_status()
-        return response.json()['data']
+        response = make_request_with_retry(
+            self.client, "GET", f"/links/{link_id}/comments"
+        )
+        return response.json()["data"]
+
+    def get_entries(self, limit: int = 25) -> List[Dict[str, Any]]:
+        """Fetch microblog entries from the /entries endpoint with paging support."""
+        return self._get_list("/entries", limit)
+
+    def get_entry_comments(self, entry_id: str) -> List[Dict[str, Any]]:
+        """Fetch comments for a specific microblog entry."""
+        response = make_request_with_retry(
+            self.client, "GET", f"/entries/{entry_id}/comments"
+        )
+        return response.json()["data"]
 
     def close(self):
         """Close the HTTP client."""

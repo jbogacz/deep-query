@@ -15,11 +15,12 @@ class Record(BaseModel):
     description: str
     source: str
     type: RecordType
+    created_at: str
     comments: List[str] = []
 
     def __str__(self):
         """String representation of the record."""
-        return f"Record(id={self.id}, type={self.type}, title={self.title}, description={self.description}, comments_count={len(self.comments)})"
+        return f"Record(id={self.id}, type={self.type}, title={self.title}, description={self.description}, created_at={self.created_at}, comments_count={len(self.comments)})"
 
     def add_comment(self, comment: str):
         """Add a comment to the record."""

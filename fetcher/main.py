@@ -1,9 +1,6 @@
 """Main application entry point."""
 
-import json
-import os
 import sys
-from datetime import datetime
 
 from .config import Config
 from .services import FileService, ForumService
@@ -25,8 +22,11 @@ def main():
         forum_service = ForumService(config)
         file_service = FileService()
 
-        records = forum_service.fetch_articles_with_comments(config.max_records)
-        file_service.save_records_to_file(records)
+        # records = forum_service.fetch_articles_with_comments(config.max_records)
+        # file_service.save_records_to_file(records, 'articles')
+
+        records = forum_service.fetch_entries_with_comments(config.max_records)
+        file_service.save_records_to_file(records, 'microblog')
 
     except Exception as e:
         print(f"Error: {e}")

@@ -32,12 +32,13 @@ class ForumService:
                     title=link["title"],
                     description=link["description"],
                     source=f"https://wykop.pl/link/{link['id']}",
+                    created_at=link["created_at"],
                     type=RecordType.ARTICLE,
                 )
 
                 # Fetch comments if available
                 if link.get("comments", {}).get("count", 0) > 0:
-                    comments = client.get_comments(link["id"])
+                    comments = client.get_link_comments(link["id"])
                     record.set_comments(
                         [c.get("content", "") for c in comments if c.get("content", "")]
                     )
@@ -47,12 +48,50 @@ class ForumService:
         print(f"Fetched {len(records)} articles.")
         return records
 
+    def fetch_entries_with_comments(
+        self, max_entries: int | None = None
+    ) -> List[Record]:
+        """Fetch microblog entries and their associated comments."""
+        max_entries = max_entries or self.config.max_records
+        records = []
+
+        with ForumAPIClient(self.config) as client:
+            entries = client.get_entries(limit=max_entries)
+
+            for entry in entries:
+                record = Record(
+                    id=str(entry["id"]),
+                    title=entry["content"],
+                    description="",
+                    source=f"https://wykop.pl/wpis/{entry['id']}",
+                    created_at=entry["created_at"],
+                    type=RecordType.ENTRY,
+                )
+
+                # Fetch comments if available
+                count = entry.get("comments", {}).get("count", 0)
+                if count > 0:
+                    if (count <= 2):
+                        comments = entry['comments']['items']
+                        comments = [c.get('content') for c in comments]
+                        record.set_comments(comments)
+                    else:
+                        comments = client.get_entry_comments(entry["id"])
+                        values = [c.get("content", "") for c in comments if c.get("content", "")]
+                        record.set_comments(values)
+                records.append(record)
+
+        print(f"Fetched {len(records)} microblog entries.")
+        return records
+
 
 class FileService:
     """Service for file operations."""
 
     @staticmethod
-    def save_records_to_file(records: List[Record], output_directory: str = "tmp"):
+    def save_records_to_file(
+        records: List[Record], domain: str, output_directory: str = "tmp"
+    ):
         # Create tmp directory if it doesn't exist
         tmp_dir = os.path.join(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -62,7 +101,7 @@ class FileService:
 
         # Save records as JSON with timestamp filename
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"{timestamp}_records.json"
+        filename = f"{timestamp}_{domain}.json"
         output_directory = os.path.join(tmp_dir, filename)
 
         # Convert Record objects to dictionaries for JSON serialization
