@@ -1,14 +1,20 @@
-# Fetcher
+# Deep Query
 
-A modular Python application that fetches links and comments from a forum API based on OpenAPI specification.
+A modular Python application for forum data fetching with semantic search and classification capabilities.
 
 ## Features
 
+### Fetcher Package
 - Configurable API connection using environment variables
 - Fetches last N links from `/links` endpoint
 - Retrieves comments/conversations for each link
 - Displays formatted output with link details and comments
 - Modular structure with separate services and models
+
+### Cognition Package
+- Semantic search functionality for forum content
+- Text classification capabilities
+- Extensible architecture for ML-powered analysis
 
 ## Installation
 
@@ -53,6 +59,12 @@ fetcher/
 ├── api_client.py        # HTTP API client
 ├── services.py          # Business logic
 └── formatter.py         # Output formatting
+
+cognition/
+├── __init__.py          # Package initialization
+├── search.py            # Semantic search functionality
+├── classifier.py        # Classification functionality
+└── models.py            # Data models for ML operations
 ```
 
 ## Output Format
